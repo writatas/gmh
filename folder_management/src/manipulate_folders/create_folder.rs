@@ -1,9 +1,7 @@
 use std::{fs, path::Path};
 use anyhow::{Error, Ok, anyhow};
 
-// Root folders are parent folders that will be used to demarcate seperate text entities.
-// The folder which will hold all root folders will be pre-determined, as in, the user cannot define it.
-pub fn create_folder_from_root_folder(root_path: &str, name: &str) -> Result<String, Error> {
+pub fn create_folder_in_root(root_path: &str, name: &str) -> Result<String, Error> {
     let root = Path::new(&root_path);
     let new_folder = Path::new(&name);
     let end_path = root.join(new_folder);
@@ -18,7 +16,7 @@ pub fn create_folder_from_root_folder(root_path: &str, name: &str) -> Result<Str
     Ok(format!("{} created successfully", end_path.to_str().unwrap()))
 }
 
-// Create a new root folder.
+// Create a new root folder. Root folders are opened as seperate work files essentially
 pub fn create_root(root_path: &str) -> Result<String, Error> {
     let root = Path::new(&root_path);
     match root.is_dir() {
