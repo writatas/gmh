@@ -1,0 +1,12 @@
+[package]
+name = "gmh_main"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+folder_management = {path = '../folder_management'}
+live_audio_transcription = {path = '../live_audio_transcription'}
+setup = {path = '../setup'}
+ui = {path = '../ui'}
