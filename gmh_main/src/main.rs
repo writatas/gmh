@@ -1,5 +1,7 @@
 use setup::*;
 
 fn main() {
-    let _ = set_configurations();
+    let test = get_auxilliary_paths();
+
+    println!("{:#?}", test);
 }
