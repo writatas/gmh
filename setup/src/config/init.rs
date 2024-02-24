@@ -1,5 +1,6 @@
 use std::{collections::HashMap, env::consts::OS, path::{Path, PathBuf}};
 use anyhow::{anyhow, Error, Ok};
+use std::env;
 
 // return master directory that will hold everything from the whisper installer, to program files
 fn get_gmh_master_dir_path() -> Result<String, Error>{
@@ -13,6 +14,8 @@ fn get_gmh_master_dir_path() -> Result<String, Error>{
     }
     else if OS == "linux" {
         let path = Path::new("/home");
+        let user = env::var("USER").unwrap();
+        let path = path.join(user);
         if path.exists() && path.is_absolute()&& path.is_dir(){
             let new_path = path.join(&gmh_master_dir);
             return Ok(new_path.display().to_string())
@@ -47,5 +50,12 @@ pub fn get_auxilliary_paths() -> Result<HashMap<&'static str, PathBuf>, Error> {
     dir_paths.insert("DOTFILE_PATH",dotfile_path.to_owned());
     dir_paths.insert("DND5E_API", dnd_api_path.to_owned());
 
-    Ok(dir_paths)
+    // if paths already exist, return an error to be handled
+    if !master_dir.is_dir() && !whisper_path.is_dir() && !root_path.is_dir() && !dotfile_path.is_file() {
+        return Ok(dir_paths)
+    } 
+    else {
+        return Err(anyhow!("Setup already complete!"))
+    }
+
 }

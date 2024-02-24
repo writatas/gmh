@@ -10,3 +10,5 @@ folder_management = {path = '../folder_management'}
 live_audio_transcription = {path = '../live_audio_transcription'}
 setup = {path = '../setup'}
 ui = {path = '../ui'}
+
+anyhow = "1.0.80"
