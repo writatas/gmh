@@ -2,7 +2,8 @@ use setup::*;
 use folder_management::*;
 use anyhow::{anyhow, Error, Ok};
 fn main() {
-    let _ = folder_setup();
+    let setup_folders = folder_setup().expect_err("Error: ");
+    println!("{:#?}", setup_folders);
 
 }
 
