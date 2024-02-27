@@ -24,6 +24,9 @@ samples.txt
 #Ignore the databases of saves directory for testing saves
 **/*.db
 
+#ginore whisper.cpp for now
+**/*.cpp
+
 #ignore .env file
 .env
 

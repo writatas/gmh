@@ -1,14 +1,11 @@
-use setup::*;
 use folder_management::*;
-use anyhow::{anyhow, Error, Ok};
+use setup::*;
+use anyhow::{Ok, Error};
 fn main() {
-    let setup_folders = folder_setup().expect_err("Error: ");
-    println!("{:#?}", setup_folders);
-
+    create_folders().unwrap();
 }
 
-// Set up required folders and install of whisper.cpp files
-fn folder_setup() -> Result<(), Error> {
+fn create_folders() -> Result<(), Error> {
     let paths = get_auxilliary_paths()?;
     let gmh_path = match paths.get("GMH_ROOTS_PATH") {
         Some(p) => {
@@ -26,6 +23,7 @@ fn folder_setup() -> Result<(), Error> {
         },
         None => "bad path".to_string()
     };
+    println!("{}", whisper_path);
     match paths.get("DOTFILE_PATH") {
         Some(p) => {
             let p = p.as_path().display().to_string();
@@ -35,6 +33,6 @@ fn folder_setup() -> Result<(), Error> {
         },
         None => ()
     };
-    
+
     Ok(())
 }

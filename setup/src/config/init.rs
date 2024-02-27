@@ -59,3 +59,4 @@ pub fn get_auxilliary_paths() -> Result<HashMap<&'static str, PathBuf>, Error> {
     }
 
 }
+
