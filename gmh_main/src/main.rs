@@ -1,8 +1,13 @@
 use folder_management::*;
 use setup::*;
 use anyhow::{Ok, Error};
+use live_audio_transcription::*;
+
 fn main() {
     create_folders().unwrap();
+    install_whisper_cpp_model("/home/writatas/'Game Master Helper'/whisper").expect("msg");
+    //create_folders().unwrap();
+
 }
 
 fn create_folders() -> Result<(), Error> {

@@ -1,3 +1,3 @@
-mod whisper;
+mod whisper_installer;
 
-pub use whisper::*;
+pub use whisper_installer::*;
