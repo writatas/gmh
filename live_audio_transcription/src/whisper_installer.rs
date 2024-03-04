@@ -1,4 +1,3 @@
-use whisper_rs_2;
 use std::fs;
 use std::path::Path;
 use std::io::Write;
