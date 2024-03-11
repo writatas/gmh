@@ -1,37 +1,38 @@
+#![allow(dead_code)]
 use std::fs;
 use std::path::Path;
-use std::io::Write;
-use reqwest::blocking::Client;
-use anyhow::{Result, Error};
+use std::process::{Command, Stdio};
+use anyhow::{Ok, Error};
 
-// install whisper to folder
 pub fn install_whisper_cpp_model(path_to_dir: &str) -> Result<(), Error> {
     let whisper_path = Path::new(path_to_dir);
-    println!("Reads that path exists: {}", &whisper_path.exists());
-    //if whisper_path.exists() {
-        // Create the installation directory
-        fs::create_dir_all(&whisper_path)?;
-
-        // Download whisper.cpp
-        let whisper_url = "https://github.com/ggerganov/whisper.cpp/raw/main/whisper.cpp";
-        let whisper_content = Client::new().get(whisper_url).send()?.text()?;
-        let whisper_file_path = whisper_path.join("whisper.cpp");
-        println!("whisper path : {:#?}", &whisper_file_path.display());
-        let mut whisper_file = fs::File::create(&whisper_file_path)?;
-        whisper_file.write_all(whisper_content.as_bytes())?;
-
-        // Download the model (base.en)
-        let model_url = "https://ggml.ggerganov.com/models/base.en";
-        let model_content = Client::new().get(model_url).send()?.bytes()?;
-        let model_file_path = whisper_path.join("base.en");
-        let mut model_file = fs::File::create(&model_file_path)?;
-        model_file.write_all(&model_content)?;
-
-        // Additional steps for Linux (if needed)
-        if std::env::consts::OS == "linux" {
-            // Download any additional files or perform specific setup
-            // For example, you can download other models or dependencies.
+    println!("Whisper path exists? = {}", whisper_path.exists());
+    if whisper_path.exists() {
+        let whisper_url = "https://github.com/ggerganov/whisper.cpp.git";
+        let _ = Command::new("git")
+            .args(&["clone", whisper_url, whisper_path.display().to_string().as_str()])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        let whisper_dir = whisper_path.join("whisper.cpp");
+        println!("WHISPER_DIR: {:#?}", &whisper_dir);
+        let mut make_command = Command::new("make");
+        if std::env::consts::OS == "windows" {
+            make_command.arg("Makefile.win");
         }
-    //}
+        let _ = make_command.current_dir(&whisper_dir).status();
+        let _ = fs::create_dir_all(&whisper_dir);
+        //let _ = fs::rename(whisper_dir.join("whisper"), whisper_path.join("whisper"));
+
+        // write the next lines here
+        if std::env::consts::OS == "linux" {
+          let _ = Command::new("bash")
+              .args(&["./models/download-ggml-model.sh", "base.en"])
+              .current_dir(&whisper_path)
+              .stdout(Stdio::null())
+              .stderr(Stdio::null())
+              .status();
+            }
+    }
     Ok(())
 }

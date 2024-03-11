@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.80"
-reqwest = {version ="0.11.24", features = ["blocking"]}
-wavy = "0.9.1"
+cpal = "0.15.3"
+hound = "3.5.1"
 whisper-rs = "0.10.0"

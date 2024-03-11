@@ -1,11 +1,11 @@
 use folder_management::*;
+use live_audio_transcription::*;
 use setup::*;
 use anyhow::{Ok, Error};
-use live_audio_transcription::*;
-use std::path::Path;
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 
-pub fn create_folders() -> Result<(), Error> {
+pub fn create_folders() -> Result<HashMap<&'static str, PathBuf>, Error> {
     let paths = get_auxilliary_paths()?;
     let gmh_path = match paths.get("GMH_ROOTS_PATH") {
         Some(p) => {
@@ -24,13 +24,12 @@ pub fn create_folders() -> Result<(), Error> {
             let whisper_path = Path::new(&p);
             if !whisper_path.exists() {
                 create_root(&p.as_str())?;
-                install_whisper_cpp_model(&p.as_str()).expect("msg");
+                install_whisper_cpp_model(&p)?;
             }
             p
         },
         None => "bad path".to_string()
     };
-    println!("{}", whisper_path);
     match paths.get("DOTFILE_PATH") {
         Some(p) => {
             let dotfile_path = Path::new(&p);
@@ -44,5 +43,5 @@ pub fn create_folders() -> Result<(), Error> {
         None => ()
     };
 
-    Ok(())
+    Ok(paths)
 }
