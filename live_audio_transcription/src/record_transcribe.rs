@@ -12,7 +12,7 @@ use hound::{SampleFormat, WavReader};
 // types
 type WavWriterHandle = Arc<Mutex<Option<hound::WavWriter<BufWriter<File>>>>>;
 // Recording of audio
-pub fn record_audio(file_name: &str, recording_bool: Arc<Mutex<bool>>) -> Result<(), anyhow::Error> {
+pub fn record_audio(file_name: &str) -> Result<(), anyhow::Error> {
     let host = cpal::default_host();
 
     // Set up the input device and stream with the default input config.
@@ -52,11 +52,8 @@ pub fn record_audio(file_name: &str, recording_bool: Arc<Mutex<bool>>) -> Result
         )?;
 
         loop {
-            let is_recording = *recording_bool.lock().unwrap();
-            if !is_recording {
-                break;
-            }
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            std::thread::sleep(std::time::Duration::from_secs(10));
+            break;
         }
 
         drop(stream);
@@ -70,22 +67,18 @@ pub fn record_audio(file_name: &str, recording_bool: Arc<Mutex<bool>>) -> Result
     Ok(())
 }
 
-pub fn transcribe_audio_file(audio_file: &str) -> String {
+pub fn transcribe_audio_file(audio_file: &str, whisper_path: &str) -> String {
     let mut result_text = String::from("");
-    let path_string = audio_file.to_string();
-    let path_len = &path_string.len();
-    let output_string = format!("{}_output.wav", &path_string[..path_len - 4]);
-
-    convert_sample_rate(&audio_file).expect("unable to convert .wav file"); 
-    
-    let audio_output_path = Path::new(&output_string);
-    let original_samples = parse_wav_file(audio_output_path);
+    let audio_out_string = convert_sample_rate(&audio_file).unwrap();
+    let audio_output_path = Path::new(audio_out_string.as_str());
+    let original_samples = parse_wav_file(&audio_output_path);
     let samples = whisper_rs::convert_integer_to_float_audio(&original_samples);
 
     let ctx = WhisperContext::new_with_params(
-        audio_file,
+        whisper_path,
         WhisperContextParameters::default()
     ).expect("failed to load model");
+
     // Run model
     let mut state = ctx.create_state().expect("failed to create state");
     let params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
@@ -99,7 +92,6 @@ pub fn transcribe_audio_file(audio_file: &str) -> String {
     }
     result_text
 }
-
 
 fn write_input_data<T, U>(input: &[T], writer: &WavWriterHandle)
 where
@@ -139,22 +131,24 @@ fn parse_wav_file(path: &Path) -> Vec<i16> {
         .collect::<Vec<_>>()
 }
 
-
-fn convert_sample_rate(file_name: &str) -> Result<(), hound::Error> {
+fn convert_sample_rate(file_name: &str) -> Result<String, hound::Error> {
     // Open the input WAV file
     let mut reader = hound::WavReader::open(file_name)?;
     assert_eq!(reader.spec().channels, 1);
     assert_eq!(reader.spec().sample_format, hound::SampleFormat::Int);
 
     // Set up the output WAV file with the new sample rate store in test_wavs for now
-    let output_file_name = format!("whisper_tmp/{}_output.wav", Path::new(file_name).file_stem().unwrap().to_str().unwrap());
+    let stem = Path::new(&file_name).file_stem().unwrap().to_str().unwrap();
+    let output_file_name = Path::new(&file_name).parent().unwrap().join(format!("{}_out.wav", stem));
+
+
     let spec = hound::WavSpec {
         channels: 1,
         sample_rate: 16000,
         bits_per_sample: 16,
         sample_format: hound::SampleFormat::Int,
     };
-    let mut writer = hound::WavWriter::create(output_file_name, spec)?;
+    let mut writer = hound::WavWriter::create(&output_file_name, spec)?;
 
     // Read samples from the input file and write them to the output file
     // Convert to correct sampleby only writting every nth sample, where n
@@ -168,5 +162,5 @@ fn convert_sample_rate(file_name: &str) -> Result<(), hound::Error> {
             writer.write_sample(resampled_sample).unwrap();
         }
     }
-    Ok(())
+    Ok(output_file_name.display().to_string())
 }
