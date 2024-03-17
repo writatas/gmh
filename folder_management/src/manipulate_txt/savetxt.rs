@@ -1,9 +1,9 @@
 use std::fs::{OpenOptions, File};
-use std::io::Write;
+use std::io::{Write, Result};
 use std::path::Path;
 
 // If the file exists append to the existing text, otherwise create a new text file with the given path
-pub fn save_txt(path: &str, text: &str) -> std::io::Result<String> {
+pub fn save_txt(path: &str, text: &str) -> Result<String> {
     let path_check = Path::new(&path).exists();
     if !path_check {
         let mut file = File::create(&path)?;

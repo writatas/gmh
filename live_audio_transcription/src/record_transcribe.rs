@@ -1,3 +1,4 @@
+use anyhow::Error;
 use cpal::traits::{DeviceTrait, HostTrait};
 use cpal::{FromSample, Sample};
 use hound::WavSpec;
@@ -5,12 +6,51 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::sync::{Arc, Mutex};
 use std::path::Path;
-use std::i16;
+use std::{i16, thread};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContextParameters, WhisperContext};
 use hound::{SampleFormat, WavReader};
+use std::sync::mpsc::channel;
 
 // types
 type WavWriterHandle = Arc<Mutex<Option<hound::WavWriter<BufWriter<File>>>>>;
+
+pub fn continuous_recording<F> (
+    file_name: &str, 
+    whisper_path: &str, 
+    recording_bool: Arc<Mutex<bool>>,
+    callback: F,
+) -> Result<(), Error>
+where
+    F: Fn(&str, &str) -> std::io::Result<String>,
+{
+    loop {
+        let (tx, rx) = channel(); // Create a new sender channel for each iteration
+
+        record_audio(&file_name)?;
+
+        let whisper_path_clone = whisper_path.to_owned();
+        let file_path_clone = file_name.to_owned();
+
+        thread::spawn(move || {
+            let transcribed_text = transcribe_audio_file(&file_path_clone, &whisper_path_clone);
+            tx.send(transcribed_text).unwrap(); // Handle send error if necessary
+        });
+
+        let received = rx.recv()?; // Handle receive error if necessary
+
+        if *recording_bool.lock().unwrap() == false {
+            break;
+        } else {
+            // Additional logic for ongoing recording
+            let file_grand_parent = Path::new(&file_name).parent().unwrap().display().to_string();
+            let transcribed_text_path = Path::new(&file_grand_parent).join("transcribed.txt").display().to_string();
+            //Use the callback function to save to text file
+            callback(&transcribed_text_path, &received)?;
+        }
+    }
+
+    Ok(())
+}
 // Recording of audio
 pub fn record_audio(file_name: &str) -> Result<(), anyhow::Error> {
     let host = cpal::default_host();
@@ -52,7 +92,7 @@ pub fn record_audio(file_name: &str) -> Result<(), anyhow::Error> {
         )?;
 
         loop {
-            std::thread::sleep(std::time::Duration::from_secs(10));
+            std::thread::sleep(std::time::Duration::from_secs(4));
             break;
         }
 
