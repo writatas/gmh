@@ -21,38 +21,41 @@ pub fn continuous_recording<F> (
     callback: F,
 ) -> Result<(), Error>
 where
-    F: Fn(&str, &str) -> std::io::Result<String>,
+    F: Fn(&str, &str) -> std::io::Result<String> + std::marker::Sync + std::marker::Send +'static + Copy,
 {
     loop {
         let (tx, rx) = channel(); // Create a new sender channel for each iteration
-
-        record_audio(&file_name)?;
-
-        let whisper_path_clone = whisper_path.to_owned();
-        let file_path_clone = file_name.to_owned();
-
-        thread::spawn(move || {
-            let transcribed_text = transcribe_audio_file(&file_path_clone, &whisper_path_clone);
-            tx.send(transcribed_text).unwrap(); // Handle send error if necessary
-        });
-
-        let received = rx.recv()?; // Handle receive error if necessary
-
         if *recording_bool.lock().unwrap() == false {
             break;
         } else {
+            record_audio(&file_name)?;
+
+            let whisper_path_clone = whisper_path.to_owned();
+            let file_path_clone = file_name.to_owned();
+    
+            thread::spawn(move || {
+                let transcribed_text = transcribe_audio_file(&file_path_clone, &whisper_path_clone);
+                tx.send(transcribed_text).unwrap(); // Handle send error if necessary
+            });
+    
+            let received = rx.recv()?; // Handle receive error if necessary
             // Additional logic for ongoing recording
             let file_grand_parent = Path::new(&file_name).parent().unwrap().display().to_string();
             let transcribed_text_path = Path::new(&file_grand_parent).join("transcribed.txt").display().to_string();
-            //Use the callback function to save to text file
-            callback(&transcribed_text_path, &received)?;
+            let save_text_closure = move |file_name: &str, text: &str| {
+                callback(file_name, text)
+            };
+            thread::spawn(move ||{
+                //Use the callback function to save to text file
+                let _saved = save_text_closure(&transcribed_text_path, &received).unwrap();
+            });
         }
     }
 
     Ok(())
 }
 // Recording of audio
-pub fn record_audio(file_name: &str) -> Result<(), anyhow::Error> {
+fn record_audio(file_name: &str) -> Result<(), anyhow::Error> {
     let host = cpal::default_host();
 
     // Set up the input device and stream with the default input config.
@@ -92,7 +95,7 @@ pub fn record_audio(file_name: &str) -> Result<(), anyhow::Error> {
         )?;
 
         loop {
-            std::thread::sleep(std::time::Duration::from_secs(4));
+            std::thread::sleep(std::time::Duration::from_secs(8));
             break;
         }
 
@@ -102,12 +105,11 @@ pub fn record_audio(file_name: &str) -> Result<(), anyhow::Error> {
     });
 
     thread_handle.join().unwrap()?;
-    println!("Recording {} complete!", file_name);
 
     Ok(())
 }
 
-pub fn transcribe_audio_file(audio_file: &str, whisper_path: &str) -> String {
+fn transcribe_audio_file(audio_file: &str, whisper_path: &str) -> String {
     let mut result_text = String::from("");
     let audio_out_string = convert_sample_rate(&audio_file).unwrap();
     let audio_output_path = Path::new(audio_out_string.as_str());
