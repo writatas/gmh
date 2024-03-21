@@ -9,6 +9,8 @@ edition = "2021"
 folder_management = {path = '../folder_management'}
 live_audio_transcription = {path = '../live_audio_transcription'}
 setup = {path = '../setup'}
-ui = {path = '../ui'}
 
 anyhow = "1.0.80"
+eframe = "0.26.2"
+simple-logging = "2.0.2"
+log = "0.4.21"

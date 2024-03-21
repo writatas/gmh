@@ -1,3 +1,3 @@
-mod app_setup;
+mod ui;
 
-pub use app_setup::*;
+pub use ui::*;
