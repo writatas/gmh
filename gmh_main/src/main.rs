@@ -1,9 +1,10 @@
 // use std::sync::{Arc, Mutex};
 
 // use folder_management::save_txt;
-// use gmh_main::create_folders;
+use gmh_main::*;
 // use live_audio_transcription::*;
 fn main() {
+    start_desktop_app().unwrap();
     // // Create folders if they do not exist, returns paths if they do already
     // let paths = create_folders().unwrap();
     // let audio_path = paths.get("AUDIO_PATH").unwrap();

@@ -8,7 +8,7 @@ use simple_logging::log_to_file;
 use std::sync::{Arc, Mutex};
 use eframe::egui;
 
-pub fn setup_logger(path_to_logfile: &str) {
+fn setup_logger(path_to_logfile: &str) {
     log_to_file(path_to_logfile, LevelFilter::Info).expect("Failed to initialize logger");
 }
 
@@ -97,6 +97,8 @@ pub struct MainWindow {
     whisper_path: String,
     gmh_roots_path: String,
     log_file_path: String,
+    audio_path: String,
+    transcribed_text_path: String,
     recording: Arc<Mutex<bool>>
 }
 
@@ -107,10 +109,31 @@ impl Default for MainWindow {
         let live_texts = HashMap::<String, String>::new();
         let text_buffer = String::from("");
         let transcribed_text = String::from("");
-        let transcrbed_text_path = String::from("");
-        //let whisper_path = String::from("");
-        //let audio_path = String::from("");
-        let log_file_path = String::from("");
+
+        let get_folders = create_folders().expect("Could not create folders");
+        let log_file_path = get_folders.get("LOGFILE_PATH")
+            .expect("Could not get logfile path")
+            .display()
+            .to_string();
+
+        setup_logger(&log_file_path.as_str());
+        let whisper_path = get_folders.get("WHISPER_PATH")
+            .expect("Could not retrieve path to whisper.ccp model")
+            .display()
+            .to_string();
+        let audio_path = get_folders.get("AUDIO_PATH")
+            .expect("Could not retrieve audio folder path")
+            .display()
+            .to_string();
+        let transcribed_text_path = Path::new(&audio_path)
+            .join("transcribed.txt")
+            .display()
+            .to_string();
+        let gmh_roots_path = get_folders.get("GMH_ROOTS_PATH")
+            .expect("Could not get GMH_ROOTS path")
+            .display()
+            .to_string();
+        let log_file_path = log_file_path.clone().to_string();
         let recording = Arc::new(Mutex::new(false));
 
 
@@ -123,7 +146,27 @@ impl Default for MainWindow {
             whisper_path,
             gmh_roots_path,
             log_file_path,
+            audio_path,
+            transcribed_text_path,
             recording
         }
     }
+}
+
+impl eframe::App for MainWindow {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.strong(&self.transcribed_text_path);
+        });
+    }
+}
+
+pub fn start_desktop_app() -> Result<(), eframe::Error>
+{
+    let options = eframe::NativeOptions::default();
+    eframe::run_native(
+    "Game Master Helper",
+    options,
+    Box::new(|_cc| Box::new(MainWindow::default())),
+    )
 }
