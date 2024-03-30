@@ -1,6 +1,7 @@
 use folder_management::*;
 use live_audio_transcription::*;
 use setup::*;
+use ui_components::*;
 use anyhow::{Ok, Error};
 use std::{collections::HashMap, path::{Path, PathBuf}};
 use log::{error, LevelFilter};
@@ -155,9 +156,8 @@ impl Default for MainWindow {
 
 impl eframe::App for MainWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.strong(&self.transcribed_text_path);
-        });
+        ctx.set_visuals(APP_VISUALS);
+        view(&ctx);
     }
 }
 
